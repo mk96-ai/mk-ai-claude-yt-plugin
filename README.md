@@ -5,6 +5,7 @@ Plugin de Claude Code (`mk-yt`) con herramientas para YouTube. Cada herramienta 
 | Función | Comando | Qué hace |
 |---|---|---|
 | shorts | `/mk-yt:shorts <url o ruta>` | Convierte un vídeo largo en shorts verticales 9:16 |
+| shorts | `/mk-yt:shorts-style` | Crea y gestiona estilos: subtítulos, cabecera, pie y marco de la cámara |
 
 ## Instalar
 ```
@@ -35,6 +36,7 @@ skills/<función>/      una carpeta por función; el núcleo la descubre por su 
     services/          lógica con efectos (ffmpeg, audio, detección, transcripción...)
     domain/            reglas puras (idioma, línea de tiempo, transcripción, lienzo)
     settings.py        carga de ajustes por capas
+skills/shorts-style/   solo SKILL.md: comando de la función shorts para gestionar estilos (el código está en shorts)
 ```
 Dependencias: `commands` → `services` → `domain`, y todo → `mkyt_core`. Nada depende hacia arriba.
 
