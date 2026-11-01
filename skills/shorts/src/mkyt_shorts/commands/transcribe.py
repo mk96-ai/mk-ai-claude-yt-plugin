@@ -1,6 +1,6 @@
 """Transcribe el vídeo con faster-whisper y guarda palabras con marcas de tiempo.
 
-Uso: shorts.py transcribe <video_id> [--lang es|en|...] [--model large-v3] [--prompt "nombres propios, temas"]
+Uso: mkyt shorts transcribe <video_id> [--lang es|en|...] [--model large-v3] [--prompt "nombres propios, temas"]
 - Idioma: por defecto se detecta solo (--lang lo fuerza).
 - GPU NVIDIA si hay (float16); si no, CPU (int8). Modelo por defecto: large-v3 en GPU, small en CPU.
 - El prompt inicial ayuda con nombres propios; si no se da, se usa el título y el canal de work/<id>/meta.json.
@@ -11,7 +11,10 @@ import wave
 
 import numpy as np
 
-from common import INPUT, add_cuda_dlls, load_json, run, save_json, video_dirs
+from mkyt_core.jsonio import load_json, save_json
+from mkyt_core.paths import INPUT, video_dirs
+from mkyt_core.proc import run
+from mkyt_shorts.services.cuda import add_cuda_dlls
 
 add_cuda_dlls()
 from faster_whisper import WhisperModel  # noqa: E402

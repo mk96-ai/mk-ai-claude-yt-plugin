@@ -1,16 +1,10 @@
-"""Pausas reales medidas sobre el audio (energía), más fiables que las marcas de tiempo de Whisper.
-
-Como módulo: SpeechMap(video_id).pause_after(t, max_search=1.5) / .lead_before(t)
-Como script:  shorts.py speech <video_id> <desde_s> <hasta_s> [pausa_min_s=0.35]
-              lista las pausas reales del rango con las palabras que hay antes y después (puntos de corte naturales).
-"""
-import sys
+"""Pausas reales y entonacion medidas sobre el audio (energia y Praat), mas fiables que las marcas de Whisper."""
 import wave
 
 import numpy as np
 
-from common import INPUT, WORK, all_words, load_json, run, video_language
-from lang import no_cierran
+from mkyt_core.paths import INPUT, WORK
+from mkyt_core.proc import run
 
 FRAME = 0.02  # s
 SR = 16000
@@ -129,57 +123,3 @@ class SpeechMap:
             else:
                 i += 1
         return out
-
-
-import re
-import unicodedata
-
-def _norm(w):
-    s = "".join(c for c in unicodedata.normalize("NFD", w.lower()) if unicodedata.category(c) != "Mn")
-    return re.sub(r"[^a-z0-9]", "", s)
-
-
-SLOPE_OK = -3.5  # pendiente (st/s) a partir de la cual un final plano aún suena a frase terminada
-
-
-def end_ok(e):
-    """Un final cierra si el tono baja claramente, o es plano pero con caída marcada."""
-    if e["tipo"] == "sube" or e["pendiente_st_s"] is None:
-        return False
-    return e["tipo"] == "cierra" or e["pendiente_st_s"] <= SLOPE_OK
-
-
-def good_endings(sm, words, a, b, min_pause=0.35):
-    no_cierra = no_cierran(video_language(sm.video_id))
-    """Pausas del rango [a, b] ordenadas por tiempo, con su entonación y si valen como final de clip.
-    ok = pausa >= min_pause, la entonación NO sube y la última palabra puede cerrar una frase."""
-    out = []
-    for s, d in sm.pauses(a, b, min_pause):
-        before = [w for w in words if w["e"] <= s + 0.15]
-        if not before:
-            continue
-        last = _norm(before[-1]["w"])
-        e = sm.ending(s)
-        cierra = end_ok(e)
-        ok = cierra and e["tipo"] != "sube" and last not in no_cierra
-        out.append({"t": round(s, 2), "pausa": round(d, 2), "tipo": e["tipo"], "caida_st": e["caida_st"],
-                    "pendiente": e["pendiente_st_s"], "ok": ok, "ultima": before[-1]["w"],
-                    "texto": " ".join(w["w"] for w in before[-9:])})
-    return out
-
-
-if __name__ == "__main__":
-    vid, a, b = sys.argv[1], float(sys.argv[2]), float(sys.argv[3])
-    mp = float(sys.argv[4]) if len(sys.argv) > 4 and not sys.argv[4].startswith("--") else 0.35
-    sm = SpeechMap(vid)
-    words = all_words(load_json(WORK / vid / "transcript.json"))
-    if "--fin" in sys.argv:  # solo finales que cierran de verdad
-        for g in good_endings(sm, words, a, b, mp):
-            if g["ok"]:
-                print(f"FIN {g['t']:8.2f} (+{g['pausa']}s) [{g['tipo']} {g['caida_st']}st {g['pendiente']}st/s]  ...{g['texto']}")
-        sys.exit(0)
-    for s, d in sm.pauses(a, b, mp):
-        before = [w["w"] for w in words if w["e"] <= s + 0.15][-7:]
-        after = [w["w"] for w in words if w["s"] >= s + d - 0.15][:5]
-        e = sm.ending(s)
-        print(f"pausa {s:8.2f} (+{d:3.1f}s) [{e['tipo']:6s} {e['caida_st']}st {e['pendiente_st_s']}st/s]  ...{' '.join(before)}  ||  {' '.join(after)}...")

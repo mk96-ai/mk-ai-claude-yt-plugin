@@ -1,6 +1,6 @@
 """Obtiene el vídeo en <workspace>/input/<id>.mp4 e imprime VIDEO_ID=<id>.
 
-Uso: shorts.py download <url | ruta de un archivo de vídeo>
+Uso: mkyt shorts download <url | ruta de un archivo de vídeo>
 - URL de YouTube (u otro sitio que entienda yt-dlp): descarga máx. 1080p. Si ya existe input/<id>.mp4 no vuelve a bajarlo.
 - Ruta local: lo copia a input/ (el id es el nombre del archivo sin extensión).
 Guarda work/<id>/meta.json (título, canal, descripción) cuando la fuente lo ofrece: sirve de contexto para la transcripción y el panel.
@@ -12,7 +12,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from common import INPUT, save_json, video_dirs
+from mkyt_core.jsonio import save_json
+from mkyt_core.paths import INPUT, video_dirs
 
 
 def video_id(url):

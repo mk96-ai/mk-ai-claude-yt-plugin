@@ -1,13 +1,15 @@
 """Localiza una frase en la transcripción y devuelve sus tiempos (sin acentos ni mayúsculas).
 
-Uso: shorts.py find <video_id> "texto a buscar" [desde_s] [hasta_s]
+Uso: mkyt shorts find <video_id> "texto a buscar" [desde_s] [hasta_s]
 Imprime todas las coincidencias: inicio, fin y las palabras tal como están en la transcripción.
 """
 import re
 import sys
 import unicodedata
 
-from common import all_words, load_json, video_dirs
+from mkyt_core.jsonio import load_json
+from mkyt_core.paths import video_dirs
+from mkyt_shorts.domain.transcript import all_words
 
 
 def norm(s):

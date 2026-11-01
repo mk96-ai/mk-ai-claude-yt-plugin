@@ -11,7 +11,7 @@ import wave
 
 import numpy as np
 
-from common import MODELS, ROOT
+from mkyt_core.paths import MODELS, ROOT
 
 SR = 48000
 
@@ -52,7 +52,7 @@ def noise_floor_db(x):
 
 
 def build_audio(video, plan, fps, cfg, work, out_path, tag, fade):
-    """plan: lista de segmentos de common.plan_clip. Escribe out_path (m4a) y devuelve info."""
+    """plan: lista de segmentos de domain.timeline.plan_clip. Escribe out_path (m4a) y devuelve info."""
     a = cfg["audio"]
     chunks = []
     for i, s in enumerate(plan):

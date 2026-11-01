@@ -1,7 +1,7 @@
 """Genera subtítulos ASS estilo TikTok (palabra activa resaltada) para un short (gancho + clip)."""
 import re
 
-from common import all_words
+from mkyt_shorts.domain.transcript import all_words
 
 FONT = "Arial Black"
 YELLOW = "&H0000E5FF&"  # BGR -> amarillo dorado

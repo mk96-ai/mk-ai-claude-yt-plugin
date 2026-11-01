@@ -1,14 +1,18 @@
 """Ajusta start/end (y gancho) de clips.json a límites de palabra y añade la cola de cierre natural.
 
-Uso: shorts.py snap <video_id>
+Uso: mkyt shorts snap <video_id>
 - inicio: comienzo de la primera palabra >= start-0.1, menos 0.12 s
 - fin: final de la última palabra <= end+0.1, más una cola de silencio (config ending.tail_s) sin pisar la siguiente palabra
 Es idempotente: se puede ejecutar varias veces sobre el mismo clips.json.
 """
 import sys
 
-from common import all_words, load_cfg, load_json, save_json, video_dirs
-from speech import SpeechMap, end_ok, good_endings
+from mkyt_core.jsonio import load_json, save_json
+from mkyt_core.paths import video_dirs
+from mkyt_shorts.domain.transcript import all_words
+from mkyt_shorts.services.endings import end_ok, good_endings
+from mkyt_shorts.services.speech_map import SpeechMap
+from mkyt_shorts.settings import load_cfg
 
 
 def snap_range(words, start, end, tail_max, sm=None):
@@ -81,7 +85,7 @@ def main():
         c["last_e"] = r["last_e"]  # los subtítulos no pasan de aquí (Whisper coloca palabras de después de la pausa dentro de ella)
         dur = c["end"] - c["start"]
         if r["pause"] is None:
-            print(f"clip {c['n']}: ATENCION, el final cae en habla continua (sin pausa real); busca otro final con shorts.py speech")
+            print(f"clip {c['n']}: ATENCION, el final cae en habla continua (sin pausa real); busca otro final con mkyt shorts speech")
         # La duración no es un objetivo: se BUSCA un final que cierre entre search_min y search_max; si hace falta, menos.
         note = ""
         if dur > d["search_max"]:

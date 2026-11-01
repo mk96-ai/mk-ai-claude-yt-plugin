@@ -1,10 +1,11 @@
 """Muestra las palabras con su tiempo de fin en un rango, para ajustar cortes a mano.
 
-Uso: shorts.py words <video_id> <desde_s> <hasta_s>
+Uso: mkyt shorts words <video_id> <desde_s> <hasta_s>
 """
 import sys
 
-from common import load_json, video_dirs
+from mkyt_core.jsonio import load_json
+from mkyt_core.paths import video_dirs
 
 work, _ = video_dirs(sys.argv[1])
 a, b = float(sys.argv[2]), float(sys.argv[3])

@@ -1,8 +1,8 @@
 """Renderiza los shorts 9:16: gancho en frío + clip, sigue al que habla, recorta su cara, subtitula,
 limpia el audio y codifica con NVENC.
 
-Uso: shorts.py render <video_id> [n_clip ...]
-Salida: <VSHORTS_OUT>/<id>/short_<n>.mp4
+Uso: mkyt shorts render <video_id> [n_clip ...]
+Salida: <MKYT_OUT>/<id>/short_<n>.mp4
 """
 import subprocess
 import sys
@@ -10,10 +10,14 @@ import sys
 import cv2
 import numpy as np
 
-from audio import build_audio
-from captions import build_ass
-from common import INPUT, REF_H, REF_W, SCALE_VF, load_cfg, load_json, plan_clip, video_dirs
-from speech import SpeechMap
+from mkyt_core.jsonio import load_json
+from mkyt_core.paths import INPUT, video_dirs
+from mkyt_shorts.domain.media import REF_H, REF_W, SCALE_VF
+from mkyt_shorts.domain.timeline import plan_clip
+from mkyt_shorts.services.audio import build_audio
+from mkyt_shorts.services.captions import build_ass
+from mkyt_shorts.services.speech_map import SpeechMap
+from mkyt_shorts.settings import load_cfg
 
 W, H = REF_W, REF_H
 GOLD = (0, 200, 255)  # BGR

@@ -1,11 +1,11 @@
 {
-  "name": "vertical-shorts-local",
+  "name": "mk-ai-claude-yt-plugin",
   "owner": { "name": "Markes96" },
   "plugins": [
     {
-      "name": "vertical-shorts",
+      "name": "mk-yt",
       "source": "./",
-      "description": "Shorts verticales 9:16 a partir de cualquier vídeo largo."
+      "description": "Herramientas para YouTube: shorts verticales a partir de cualquier vídeo largo."
     }
   ]
 }

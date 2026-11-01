@@ -1,9 +1,9 @@
 """Analiza cada tramo de cada clip: posición de la cara en cada recuadro y quién habla (movimiento de labios).
 
-Uso: shorts.py analyze <video_id> [n_clip ...]
-Entrada: work/<id>/clips.json y work/<id>/layout.json (shorts.py layout detect)
+Uso: mkyt shorts analyze <video_id> [n_clip ...]
+Entrada: work/<id>/clips.json y work/<id>/layout.json (mkyt shorts layout detect)
 Salida:  work/<id>/clip<n>_analysis.json  ->  {"fps": 10, "segs": [{"t1": [...], "t2": [...], ...}, ...]}
-(un elemento de "segs" por tramo de common.plan_clip: gancho en frío y clip principal)
+(un elemento de "segs" por tramo de domain.timeline.plan_clip: gancho en frío y clip principal)
 """
 import subprocess
 import sys
@@ -14,7 +14,11 @@ import mediapipe as mp
 from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision
 
-from common import INPUT, MODELS, REF_H, REF_W, SCALE_VF, load_cfg, load_json, plan_clip, save_json, video_dirs
+from mkyt_core.jsonio import load_json, save_json
+from mkyt_core.paths import INPUT, MODELS, video_dirs
+from mkyt_shorts.domain.media import REF_H, REF_W, SCALE_VF
+from mkyt_shorts.domain.timeline import plan_clip
+from mkyt_shorts.settings import load_cfg
 
 SAMPLE_FPS = 10
 W, H = REF_W, REF_H
@@ -71,7 +75,7 @@ def main():
     only = {int(a) for a in sys.argv[2:]}
     cfg = load_cfg(video_id)
     if not cfg["tiles"]:
-        sys.exit("No hay layout para este vídeo. Ejecuta primero: shorts.py layout detect " + video_id)
+        sys.exit("No hay layout para este vídeo. Ejecuta primero: mkyt shorts layout detect " + video_id)
     work, _ = video_dirs(video_id)
     clips = load_json(work / "clips.json")
     video = INPUT / f"{video_id}.mp4"

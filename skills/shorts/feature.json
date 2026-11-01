@@ -1,0 +1,24 @@
+{
+  "name": "shorts",
+  "summary": "Shorts verticales 9:16 a partir de un video largo (URL o archivo).",
+  "requirements": "requirements.txt",
+  "imports": ["yt_dlp", "faster_whisper", "mediapipe", "cv2", "numpy", "parselmouth"],
+  "tools": {
+    "required": ["ffmpeg", "ffprobe"],
+    "optional": { "node": "YouTube lo necesita para resolver formatos; no hace falta con archivos locales" }
+  },
+  "models": [
+    {
+      "name": "face_landmarker.task",
+      "url": "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+      "required": true,
+      "purpose": "detecta caras para elegir camaras y seguir al que habla"
+    },
+    {
+      "name": "sh.rnnn",
+      "url": "https://raw.githubusercontent.com/GregorR/rnnoise-models/master/somnolent-hogwash-2018-09-01/sh.rnnn",
+      "required": false,
+      "purpose": "reduccion de ruido RNNoise; sin el se usa otra reduccion mas basica"
+    }
+  ]
+}

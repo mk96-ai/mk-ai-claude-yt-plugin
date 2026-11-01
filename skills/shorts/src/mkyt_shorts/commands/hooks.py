@@ -1,6 +1,6 @@
 ﻿"""Busca candidatos a GANCHO dentro de un clip: frases completas, con gancho de verdad, que acaban en pausa.
 
-Uso: shorts.py hooks <video_id> [n_clip]
+Uso: mkyt shorts hooks <video_id> [n_clip]
 Un buen gancho es una frase autosuficiente de 2,5-6,5 s: empieza justo tras una pausa, no arranca con un conector,
 acaba en una pausa real con el tono bajando (o al menos sin subir), no es la primera ni la última frase del clip y
 tiene algo concreto (una cifra, una afirmación fuerte). Se imprimen los mejores con su puntuación;
@@ -9,9 +9,12 @@ si ninguno es bueno, el clip va SIN gancho.
 import re
 import sys
 
-from common import all_words, load_json, video_dirs, video_language
-from lang import conectores_inicio, no_cierran
-from speech import SpeechMap, _norm, end_ok
+from mkyt_core.jsonio import load_json
+from mkyt_core.paths import video_dirs
+from mkyt_shorts.domain.language import conectores_inicio, no_cierran
+from mkyt_shorts.domain.transcript import all_words, video_language
+from mkyt_shorts.services.endings import end_ok, norm_word
+from mkyt_shorts.services.speech_map import SpeechMap
 
 def runs(sm, a, b, min_pause=0.25):
     """Tramos de habla continuos entre pausas dentro de [a, b]."""
@@ -40,7 +43,7 @@ def candidates(sm, words, start, end, hook_max=7.5):
             ws = [w for w in words if s - 0.02 <= w["s"] and w["e"] <= e + 0.05]
             if len(ws) < 6:
                 continue
-            first, last = _norm(ws[0]["w"]), _norm(ws[-1]["w"])
+            first, last = norm_word(ws[0]["w"]), norm_word(ws[-1]["w"])
             ending = sm.ending(e)
             score, notes = 0.0, []
             if ending["tipo"] == "cierra" or end_ok(ending):

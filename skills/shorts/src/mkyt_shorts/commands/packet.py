@@ -1,13 +1,17 @@
 """Prepara el paquete de texto que ven los espectadores (agentes) para valorar cada short.
 
-Uso: shorts.py packet <video_id> [n_clip ...]
+Uso: mkyt shorts packet <video_id> [n_clip ...]
 Salida: work/<id>/review_packet.md
 Por clip: gancho en frío, texto del clip con marcas de pausa, el punto de corte y lo que se dice justo
 después (que NO está en el vídeo), más unas palabras de contexto anterior.
 """
 import sys
 
-from common import all_words, load_cfg, load_json, plan_clip, video_dirs
+from mkyt_core.jsonio import load_json
+from mkyt_core.paths import video_dirs
+from mkyt_shorts.domain.timeline import plan_clip
+from mkyt_shorts.domain.transcript import all_words
+from mkyt_shorts.settings import load_cfg
 
 AFTER_WORDS = 30
 BEFORE_WORDS = 20

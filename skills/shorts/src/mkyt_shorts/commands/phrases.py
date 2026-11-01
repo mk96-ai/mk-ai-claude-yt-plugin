@@ -1,12 +1,14 @@
 """Imprime la transcripción en frases (separadas por pausas) con su tiempo, para elegir cortes y ganchos.
 
-Uso: shorts.py phrases <video_id> <desde_s> <hasta_s> [pausa_min_s=0.35]
+Uso: mkyt shorts phrases <video_id> <desde_s> <hasta_s> [pausa_min_s=0.35]
 Cada línea: [inicio-fin] +pausa_hasta_la_siguiente  texto
 Los finales naturales son las frases cuya pausa posterior es larga (>= 0.5 s).
 """
 import sys
 
-from common import all_words, load_json, phrases, video_dirs
+from mkyt_core.jsonio import load_json
+from mkyt_core.paths import video_dirs
+from mkyt_shorts.domain.transcript import all_words, phrases
 
 work, _ = video_dirs(sys.argv[1])
 a, b = float(sys.argv[2]), float(sys.argv[3])

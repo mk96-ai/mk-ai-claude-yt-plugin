@@ -1,5 +1,5 @@
 {
-  "_comment": "Valores por defecto genéricos. Nada de layout de cámaras aquí: se detecta en cada vídeo (work/<id>/layout.json). Para ajustes propios crea ~/.vertical-shorts/config.json con solo las claves que quieras cambiar.",
+  "_comment": "Valores por defecto genéricos. Nada de layout de cámaras aquí: se detecta en cada vídeo (work/<id>/layout.json). Para ajustes propios crea ~/.mk-yt/shorts.json con solo las claves que quieras cambiar.",
   "tiles": {},
   "default_tile": null,
   "banner_rect": null,
