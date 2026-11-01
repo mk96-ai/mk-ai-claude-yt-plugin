@@ -1,0 +1,7 @@
+{
+  "name": "vertical-shorts",
+  "version": "0.1.0",
+  "description": "Convierte cualquier vídeo largo (URL o archivo) en shorts verticales 9:16: transcribe, elige los tramos por contenido, corta en finales naturales, sigue al que habla, subtitula y limpia el audio.",
+  "author": { "name": "Markes96" },
+  "keywords": ["shorts", "video", "tiktok", "youtube-shorts", "whisper", "ffmpeg"]
+}

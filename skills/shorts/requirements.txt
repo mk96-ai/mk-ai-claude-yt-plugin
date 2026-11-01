@@ -1,0 +1,9 @@
+yt-dlp
+faster-whisper
+mediapipe
+opencv-python
+numpy
+praat-parselmouth
+# GPU (Whisper en CUDA). Sin GPU NVIDIA se pueden omitir: transcribe.py cae a CPU.
+nvidia-cublas-cu12
+nvidia-cudnn-cu12

@@ -1,0 +1,11 @@
+{
+  "name": "vertical-shorts-local",
+  "owner": { "name": "Markes96" },
+  "plugins": [
+    {
+      "name": "vertical-shorts",
+      "source": "./",
+      "description": "Shorts verticales 9:16 a partir de cualquier vídeo largo."
+    }
+  ]
+}
