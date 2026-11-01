@@ -7,6 +7,7 @@
   "canvas": [1080, 1920],
   "panel": { "y": 520, "w": 1080, "h": 810 },
   "header_box": { "y": 150, "h": 270 },
+  "header_box_no_title": { "y": 140, "h": 370 },
   "footer_box": { "y": 1770, "h": 150 },
   "banner_y": 150,
   "footer_y": 1770,

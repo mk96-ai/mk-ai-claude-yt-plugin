@@ -87,7 +87,7 @@ def build_ass(transcript, plan, total_dur, title, cfg, fixes=None, style=None):
         f"Style: Brand,{sub.font},60,{WHITE},{WHITE},&H00000000&,&H96000000&,0,0,0,0,100,100,0,0,1,5,2,5,60,60,40,1",
         "", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
     ]
-    if title:
+    if title and style.show_title:
         lines.append(
             f"Dialogue: 0,{ts(0)},{ts(total_dur)},Title,,0,0,0,,{{\\pos({cw // 2},{cfg['title_y']})}}{title.upper()}"
         )

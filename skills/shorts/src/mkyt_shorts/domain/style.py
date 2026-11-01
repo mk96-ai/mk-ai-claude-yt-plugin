@@ -1,7 +1,17 @@
 """Estilo visual de un short: subtitulos, cabecera, pie y marco alrededor de la camara. Reglas puras, sin disco ni imagenes."""
 from dataclasses import dataclass, field, replace
 
-BLOCK_MODES = ("none", "source", "image", "text")
+BLOCK_MODES = ("none", "source", "image", "text", "socials")
+SOCIAL_NETWORKS = ("youtube", "x", "instagram", "tiktok")
+NETWORK_ALIASES = {"twitter": "x", "yt": "youtube", "ig": "instagram"}
+
+
+def normalize_network(name: str) -> str:
+    key = name.strip().lower()
+    key = NETWORK_ALIASES.get(key, key)
+    if key not in SOCIAL_NETWORKS:
+        raise ValueError(f"red desconocida '{name}' (validas: {', '.join(SOCIAL_NETWORKS)})")
+    return key
 
 
 @dataclass(frozen=True)
@@ -15,10 +25,12 @@ class SubtitleStyle:
 @dataclass(frozen=True)
 class BlockStyle:
     """Cabecera o pie. none = nada; source = el recuadro fijado en el layout del propio video;
-    image = imagen propia (logo, redes ya disenadas); text = texto dibujado con la fuente de los subtitulos."""
+    image = imagen propia (logo, redes ya disenadas); text = texto dibujado con la fuente de los subtitulos;
+    socials = iconos de redes con su usuario, en filas de dos."""
     mode: str = "none"
     image: str | None = None
     text: str | None = None
+    socials: tuple = ()
 
     def __post_init__(self):
         if self.mode not in BLOCK_MODES:
@@ -27,6 +39,9 @@ class BlockStyle:
             raise ValueError("el modo image necesita una imagen")
         if self.mode == "text" and not self.text:
             raise ValueError("el modo text necesita un texto")
+        if self.mode == "socials" and not self.socials:
+            raise ValueError("el modo socials necesita al menos una red")
+        object.__setattr__(self, "socials", tuple((normalize_network(n), h) for n, h in self.socials))
 
 
 @dataclass(frozen=True)
@@ -36,6 +51,7 @@ class Style:
     header: BlockStyle = field(default_factory=BlockStyle)
     footer: BlockStyle = field(default_factory=BlockStyle)
     frame: str | None = None  # PNG con transparencia que rodea la camara
+    show_title: bool = True   # titulo del clip en pantalla
 
     def to_dict(self) -> dict:
         return {
@@ -44,6 +60,7 @@ class Style:
             "header": vars(self.header).copy(),
             "footer": vars(self.footer).copy(),
             "frame": self.frame,
+            "show_title": self.show_title,
         }
 
     @classmethod
@@ -54,6 +71,7 @@ class Style:
             header=BlockStyle(**data.get("header", {})),
             footer=BlockStyle(**data.get("footer", {})),
             frame=data.get("frame"),
+            show_title=data.get("show_title", True),
         )
 
     def with_assets(self, resolve) -> "Style":
@@ -82,7 +100,12 @@ def parse_block_spec(spec: str) -> BlockStyle:
         return BlockStyle("image", image=value.strip().strip('"'))
     if kind == "text":
         return BlockStyle("text", text=value.strip())
-    raise ValueError(f"especificacion no valida '{spec}': usa none, source, image:<ruta> o text:<texto>")
+    if kind == "socials":
+        pairs = [item.split("=", 1) for item in value.split(",") if item.strip()]
+        if not pairs or any(len(p) != 2 or not p[1].strip() for p in pairs):
+            raise ValueError("socials:<red>=<usuario>,... (por ejemplo socials:youtube=@canal,x=@canal)")
+        return BlockStyle("socials", socials=tuple((n, h.strip()) for n, h in pairs))
+    raise ValueError(f"especificacion no valida '{spec}': usa none, source, image:<ruta>, text:<texto> o socials:<red>=<usuario>,...")
 
 
 def hex_to_ass(color: str) -> str:

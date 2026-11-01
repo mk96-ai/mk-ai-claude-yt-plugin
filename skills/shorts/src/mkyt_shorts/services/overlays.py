@@ -5,13 +5,18 @@ import numpy as np
 
 from mkyt_shorts.domain.style import BlockStyle, Style
 from mkyt_shorts.services.image_ops import fit, load_rgba, paste
+from mkyt_shorts.services.socials import render_socials
 
 
 class Overlays:
     def __init__(self, style: Style, cfg: dict):
         self.style, self.cfg = style, cfg
-        self._images = {role: load_rgba(b.image) for role, b in (("header", style.header), ("footer", style.footer))
-                        if b.mode == "image"}
+        self._images = {}
+        for role, block in (("header", style.header), ("footer", style.footer)):
+            if block.mode == "image":
+                self._images[role] = load_rgba(block.image)
+            elif block.mode == "socials":
+                self._images[role] = render_socials(block.socials)
         self._frame = None
         if style.frame:
             ph, pw = cfg["panel"]["h"], cfg["panel"]["w"]
@@ -31,10 +36,15 @@ class Overlays:
             p = self.cfg["panel"]
             paste(canvas, self._frame, 0, p["y"])
 
+    def _box(self, role):
+        if role == "header" and not self.style.show_title:
+            return self.cfg["header_box_no_title"]  # sin titulo debajo, la cabecera puede ser mas alta
+        return self.cfg[f"{role}_box"]
+
     def _draw(self, bg, role, block: BlockStyle, source_frame) -> None:
         cw = self.cfg["canvas"][0]
-        if block.mode == "image":
-            box = self.cfg[f"{role}_box"]
+        if block.mode in ("image", "socials"):
+            box = self._box(role)
             img = fit(self._images[role], cw, box["h"])
             paste(bg, img, (cw - img.shape[1]) // 2, box["y"] + (box["h"] - img.shape[0]) // 2)
         elif block.mode == "source" and source_frame is not None:
