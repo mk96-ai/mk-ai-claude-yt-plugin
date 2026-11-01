@@ -17,12 +17,8 @@ Rutas por variable de entorno (opcionales; en PowerShell `$env:NOMBRE="..."`): `
 ## 1. Preguntar (siempre, antes de empezar; en una sola pregunta)
 - **¿Dónde guardo los shorts?** (carpeta; si no existe, créala). Guárdala como `MKYT_OUT` (ruta absoluta). Los vídeos, `publicar.md` y `panel.md` irán en `<carpeta>\<id>\`.
 - **¿Cuántos shorts como máximo?** (todos los que aprueben los espectadores / hasta 3 / hasta 5).
-- **Estilo visual.** Ejecuta `$MKYT shorts style list`. Si hay estilos guardados, ofrécelos (más «sin estilo»). Si el usuario elige uno, no preguntes más de diseño. Si no hay o quiere uno nuevo, pregunta (en la misma pregunta):
-  - ¿Subtítulos? sí o no. ¿Título del clip en pantalla? sí o no.
-  - Cabecera: nada, un logo (que pase la imagen), un texto, o el banner del propio vídeo.
-  - Pie: nada, una imagen (por ejemplo sus redes ya diseñadas), un texto tipo `@usuario`, o iconos de redes (youtube, x, instagram, tiktok) con sus usuarios.
-  - Marco alrededor de la cámara: ninguno o un PNG con transparencia que pase.
-  Guárdalo con `$MKYT shorts style add <nombre> ...` (ver la skill `shorts-style`) y pregunta qué nombre le pone.
+- **Estilo.** Ejecuta `$MKYT shorts style list` y ofrece los guardados (más «sin estilo»: vídeo desenfocado de fondo). Si no hay ninguno o quiere uno nuevo, pídele la imagen del marco completo (9:16) y créalo con la skill `shorts-style`.
+- **Subtítulos:** ¿sí o no? **Título del clip en pantalla:** ¿sí o no?
 
 ## 2. Obtener y transcribir
 - `$MKYT shorts download "<url o ruta>"` → imprime `VIDEO_ID=<id>`. Si el vídeo ya está en el workspace no se baja otra vez.
@@ -36,7 +32,7 @@ Rutas por variable de entorno (opcionales; en PowerShell `$env:NOMBRE="..."`): `
 - Si el overlay cambia a mitad del directo, usa el que predomina en los tramos elegidos.
 
 ## 3b. Fijar el estilo de este vídeo
-Si el usuario eligió un estilo (o quiere retocar uno: `style edit`, ver la skill `shorts-style`): `$MKYT shorts style use <id> <nombre>`; mira la muestra con `$MKYT shorts style preview <nombre> <id>` (Read sobre la imagen que imprime) y corrige si algo no encaja. Sin estilo, se usan subtítulos y, si fijaste banner/pie en el layout, esos; sin marco. El modo `source` de cabecera/pie usa el banner/pie fijados con `layout set`.
+`$MKYT shorts style use <id> <nombre|none> --subtitles on|off --title on|off` con lo que eligió el usuario. Con estilo, mira la muestra (`$MKYT shorts style preview <nombre> <id>`, Read sobre la imagen que imprime) y comprueba que la ventana y los subtítulos caen bien. Sin estilo se usa el banner/pie fijado con `layout set`, si lo hay.
 
 ## 4. Contexto del vídeo
 Escribe `work\<id>\context.txt` (1-2 frases: de qué trata, quién habla, a quién interesa; sirve de contexto al panel). Lee la transcripción entera para ello.

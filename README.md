@@ -5,7 +5,7 @@ Plugin de Claude Code (`mk-yt`) con herramientas para YouTube. Cada herramienta 
 | Función | Comando | Qué hace |
 |---|---|---|
 | shorts | `/mk-yt:shorts <url o ruta>` | Convierte un vídeo largo en shorts verticales 9:16 |
-| shorts | `/mk-yt:shorts-style` | Crea y gestiona estilos: subtítulos, cabecera, pie y marco de la cámara |
+| shorts | `/mk-yt:shorts-style` | Crea y gestiona estilos: un marco a pantalla completa con ventana para el vídeo y zona de subtítulos |
 
 ## Instalar
 ```

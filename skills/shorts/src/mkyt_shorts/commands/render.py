@@ -13,17 +13,16 @@ import numpy as np
 from mkyt_core.jsonio import load_json
 from mkyt_core.paths import INPUT, video_dirs
 from mkyt_shorts.domain.media import REF_H, REF_W, SCALE_VF
+from mkyt_shorts.domain.style import apply_geometry
 from mkyt_shorts.domain.timeline import plan_clip
 from mkyt_shorts.services.audio import build_audio
-from mkyt_shorts.services.canvas import build_static
+from mkyt_shorts.services.backdrops import make_backdrop
 from mkyt_shorts.services.captions import build_ass
-from mkyt_shorts.services.overlays import Overlays
 from mkyt_shorts.services.speech_map import SpeechMap
 from mkyt_shorts.services.style_store import video_style
 from mkyt_shorts.settings import load_cfg
 
 W, H = REF_W, REF_H
-GOLD = (0, 200, 255)  # BGR
 
 
 def interp_track(values, n_out, src_fps, out_fps):
@@ -98,7 +97,7 @@ def seg_frames(video, seg, fps):
     dec.kill()
 
 
-def compose(cfg, static, overlays, frame, key, tracks, i, zoom=1.0):
+def compose(cfg, static, backdrop, frame, key, tracks, i, zoom=1.0):
     """zoom > 1 acerca la cara (efecto de 'golpe' lento durante el gancho)."""
     panel = cfg["panel"]
     pw, ph = panel["w"], panel["h"]
@@ -115,11 +114,9 @@ def compose(cfg, static, overlays, frame, key, tracks, i, zoom=1.0):
     crop = frame[ty + y0:ty + y0 + int(ch_), tx + x0:tx + x0 + int(cw_)]
     crop = cv2.resize(crop, (pw, ph), interpolation=cv2.INTER_LANCZOS4)
     canvas = static.copy()
-    canvas[panel["y"]:panel["y"] + ph, 0:pw] = crop
-    if overlays.has_frame:
-        overlays.apply_frame(canvas)
-    else:
-        cv2.rectangle(canvas, (0, panel["y"]), (pw - 1, panel["y"] + ph - 1), GOLD, 6)
+    px = panel.get("x", 0)
+    canvas[panel["y"]:panel["y"] + ph, px:px + pw] = crop
+    backdrop.decorate(canvas)
     return canvas
 
 
@@ -136,7 +133,7 @@ def video_encoder(cfg):
     return ["-c:v", "libx264", "-preset", "medium", "-crf", "19"]
 
 
-def render_clip(video_id, clip, cfg, style, overlays, transcript, work, out):
+def render_clip(video_id, clip, cfg, options, backdrop, transcript, work, out):
     n = clip["n"]
     fps = cfg["fps"]
     video = INPUT / f"{video_id}.mp4"
@@ -153,7 +150,7 @@ def render_clip(video_id, clip, cfg, style, overlays, transcript, work, out):
     ass_path = work / f"clip{n}.ass"
     fixes_file = work / "fixes.json"  # correcciones de nombres propios específicas de este vídeo
     fixes = load_json(fixes_file) if fixes_file.exists() else {}
-    ass_path.write_text(build_ass(transcript, plan, total_dur, clip.get("title", ""), cfg, fixes, style), encoding="utf-8")
+    ass_path.write_text(build_ass(transcript, plan, total_dur, clip.get("title", ""), cfg, fixes, options), encoding="utf-8")
     out_path = out / f"short_{n}.mp4"
     ass_arg = str(ass_path).replace("\\", "/").replace(":", "\\:")
     cw, ch = cfg["canvas"]
@@ -182,9 +179,9 @@ def render_clip(video_id, clip, cfg, style, overlays, transcript, work, out):
         canvas = None
         for i, frame in enumerate(seg_frames(video, seg, fps)):
             if static is None:
-                static = build_static(cfg, frame, overlays)
+                static = backdrop.static(frame)
             z = 1 + (cfg["hook"]["zoom_end"] - 1) * (i / max(seg["n"] - 1, 1)) if seg["kind"] == "hook" else 1.0
-            canvas = compose(cfg, static, overlays, frame, who[i], tracks, i, z)
+            canvas = compose(cfg, static, backdrop, frame, who[i], tracks, i, z)
             if i == 0 and pending_gap:
                 # transición gancho -> clip: fogonazo blanco que sube sobre el último frame del gancho y baja sobre el primero del clip
                 flash = cfg["transition"]["flash_max"]
@@ -208,8 +205,10 @@ def main():
     video_id = sys.argv[1]
     only = {int(a) for a in sys.argv[2:]}
     cfg = load_cfg(video_id)
-    style = video_style(video_id, cfg)
-    overlays = Overlays(style, cfg)
+    vs = video_style(video_id)
+    if vs.style:
+        cfg = apply_geometry(cfg, vs.style)
+    backdrop = make_backdrop(vs, cfg)
     work, out = video_dirs(video_id)
     clips = load_json(work / "clips.json")
     transcript = load_json(work / "transcript.json")
@@ -217,7 +216,7 @@ def main():
         if only and clip["n"] not in only:
             continue
         print(f"Renderizando clip {clip['n']}: {clip.get('title', '')}", flush=True)
-        render_clip(video_id, clip, cfg, style, overlays, transcript, work, out)
+        render_clip(video_id, clip, cfg, vs.options, backdrop, transcript, work, out)
 
 
 if __name__ == "__main__":

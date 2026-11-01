@@ -1,11 +1,12 @@
 """Genera subtítulos ASS estilo TikTok (palabra activa resaltada) para un short (gancho + clip)."""
 import re
 
-from mkyt_shorts.domain.style import Style, hex_to_ass
+from mkyt_shorts.domain.style import RunOptions
 from mkyt_shorts.domain.transcript import all_words
 
+FONT = "Arial Black"
+YELLOW = "&H0000E5FF&"  # BGR -> amarillo dorado
 WHITE = "&H00FFFFFF&"
-NL = chr(10)
 
 
 def ts(t):
@@ -58,22 +59,9 @@ def apply_fixes(words, fixes):
     return out
 
 
-def brand_lines(style, cfg, total_dur):
-    """Texto de cabecera y pie (modo text): centrado en su caja, con la fuente de los subtitulos."""
-    cw = cfg["canvas"][0]
-    out = []
-    for role, block in (("header", style.header), ("footer", style.footer)):
-        if block.mode == "text":
-            box = cfg[f"{role}_box"]
-            out.append(f"Dialogue: 0,{ts(0)},{ts(total_dur)},Brand,,0,0,0,,"
-                       f"{{\\pos({cw // 2},{box['y'] + box['h'] // 2})}}{block.text}")
-    return out
-
-
-def build_ass(transcript, plan, total_dur, title, cfg, fixes=None, style=None):
-    style = style or Style()
-    sub = style.subtitles
-    yellow = hex_to_ass(sub.active_color)
+def build_ass(transcript, plan, total_dur, title, cfg, fixes=None, options=None):
+    """options (RunOptions): subtitulos y titulo se pueden apagar."""
+    options = options or RunOptions()
     cw, ch = cfg["canvas"]
     fixes = {**cfg.get("caption_fixes", {}), **(fixes or {})}
     lines = [
@@ -82,18 +70,16 @@ def build_ass(transcript, plan, total_dur, title, cfg, fixes=None, style=None):
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, "
         "Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, "
         "MarginR, MarginV, Encoding",
-        f"Style: Cap,{sub.font},{sub.size},{WHITE},{WHITE},&H00000000&,&H96000000&,0,0,0,0,100,100,0,0,1,7,3,5,40,40,40,1",
-        f"Style: Title,{sub.font},54,{WHITE},{WHITE},&H00000000&,&H96000000&,0,0,0,0,100,100,0,0,1,5,2,5,60,60,40,1",
-        f"Style: Brand,{sub.font},60,{WHITE},{WHITE},&H00000000&,&H96000000&,0,0,0,0,100,100,0,0,1,5,2,5,60,60,40,1",
+        f"Style: Cap,{FONT},{cfg.get('caption_size', 84)},{WHITE},{WHITE},&H00000000&,&H96000000&,0,0,0,0,100,100,0,0,1,7,3,5,40,40,40,1",
+        f"Style: Title,{FONT},54,{WHITE},{WHITE},&H00000000&,&H96000000&,0,0,0,0,100,100,0,0,1,5,2,5,60,60,40,1",
         "", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
     ]
-    if title and style.show_title:
+    if title and options.title:
         lines.append(
             f"Dialogue: 0,{ts(0)},{ts(total_dur)},Title,,0,0,0,,{{\\pos({cw // 2},{cfg['title_y']})}}{title.upper()}"
         )
-    lines.extend(brand_lines(style, cfg, total_dur))
-    if not sub.enabled:
-        return NL.join(lines)
+    if not options.subtitles:
+        return chr(10).join(lines)
     all_w = apply_fixes(all_words(transcript), fixes) if fixes else all_words(transcript)
     for seg in plan:
         words = []
@@ -115,10 +101,10 @@ def build_ass(transcript, plan, total_dur, title, cfg, fixes=None, style=None):
                 if t1 <= t0:
                     continue
                 if seg["kind"] == "hook":  # gancho: letra más grande y todo en amarillo para que destaque
-                    parts = [f"{{\\c{yellow}}}{x['w']}" for x in chunk]
+                    parts = [f"{{\\c{YELLOW}}}{x['w']}" for x in chunk]
                     size = f"{{\\fs{cfg['hook']['caption_size']}}}"
                 else:
-                    parts = [f"{{\\c{yellow if j == i else WHITE}}}{x['w']}" for j, x in enumerate(chunk)]
+                    parts = [f"{{\\c{YELLOW if j == i else WHITE}}}{x['w']}" for j, x in enumerate(chunk)]
                     size = ""
                 lines.append(
                     f"Dialogue: 1,{ts(t0 + seg['offset'])},{ts(t1 + seg['offset'])},Cap,,0,0,0,,"

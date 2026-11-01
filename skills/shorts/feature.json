@@ -2,7 +2,7 @@
   "name": "shorts",
   "summary": "Shorts verticales 9:16 a partir de un video largo (URL o archivo).",
   "requirements": "requirements.txt",
-  "imports": ["yt_dlp", "faster_whisper", "mediapipe", "cv2", "numpy", "parselmouth", "PIL"],
+  "imports": ["yt_dlp", "faster_whisper", "mediapipe", "cv2", "numpy", "parselmouth"],
   "tools": {
     "required": ["ffmpeg", "ffprobe"],
     "optional": { "node": "YouTube lo necesita para resolver formatos; no hace falta con archivos locales" }

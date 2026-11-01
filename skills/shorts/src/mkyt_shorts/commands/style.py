@@ -1,79 +1,53 @@
-"""Estilos visuales de los shorts: subtitulos, cabecera, pie y marco alrededor de la camara.
+"""Estilos de los shorts: un marco a pantalla completa (9:16) con una ventana para el video.
 
-  mkyt shorts style add <nombre> [opciones] [--force]     crea un estilo (lo no indicado: subtitulos si, titulo si, resto nada)
-  mkyt shorts style edit <nombre> [opciones]              cambia solo las opciones indicadas
+  mkyt shorts style add <nombre> <imagen> [--window x,y,w,h] [--captions x,y,w,h] [--force]
+  mkyt shorts style edit <nombre> [--image imagen] [--window x,y,w,h] [--captions x,y,w,h]
   mkyt shorts style list
   mkyt shorts style show <nombre>
   mkyt shorts style remove <nombre>
-  mkyt shorts style use <video_id> <nombre>               fija el estilo de ese video (work/<id>/style.json)
-  mkyt shorts style preview <nombre> [video_id]           imagen de muestra (con fotograma del video si se da)
+  mkyt shorts style use <video_id> <nombre|none> [--subtitles on|off] [--title on|off]
+  mkyt shorts style preview <nombre> [video_id]
 
-Opciones (add y edit):
-  --subtitles on|off   --sub-color #RRGGBB   --sub-font NOMBRE   --sub-size N   --title on|off
-  --header ESPEC       --footer ESPEC        --frame imagen.png|none
-ESPEC de cabecera y pie:
-  none | source (recuadro fijado en el layout del video) | image:<ruta> | text:<texto>
-  | socials:<red>=<usuario>,...   (redes: youtube, x, instagram, tiktok; se dibujan en filas de dos)
-El marco es un PNG con transparencia que se ajusta al recuadro de la camara; si es opaco con interior blanco, se
-quita el blanco al guardarlo. Los estilos viven en ~/.mk-yt/shorts/styles/<nombre>/.
+Al guardar un marco se detecta solo: la ventana del video (hueco transparente, o blanco, en el centro) y la franja
+libre para los subtitulos (el hueco entre dos filetes de neon bajo la ventana). --window y --captions lo fijan a mano
+(coordenadas en el lienzo 1080x1920). Subtitulos y titulo se eligen en cada video con 'use'. Con 'none' no se usa
+estilo (video desenfocado de fondo). Los estilos viven en ~/.mk-yt/shorts/styles/<nombre>/.
 """
 import argparse
 import sys
-from dataclasses import replace
 
 from mkyt_core.paths import INPUT, WORK
-from mkyt_shorts.domain.style import SubtitleStyle, hex_to_ass, parse_block_spec
+from mkyt_shorts.domain.style import RunOptions
 from mkyt_shorts.services.style_preview import render_preview
-from mkyt_shorts.services.style_store import KEEP, STYLES_DIR, StyleError, StyleStore
+from mkyt_shorts.services.style_store import STYLES_DIR, StyleError, StyleStore
 from mkyt_shorts.services.video_sampling import sample_frames
 from mkyt_shorts.settings import load_cfg
 
-DEFAULT_SUBS = SubtitleStyle()
+
+def _rect(text):
+    values = [int(float(v)) for v in text.split(",")]
+    if len(values) != 4:
+        raise argparse.ArgumentTypeError("se esperaba x,y,w,h")
+    return tuple(values)
+
+
+def _on_off(value, default):
+    return default if value is None else value == "on"
 
 
 def _describe(style) -> str:
-    def block(b):
-        detail = b.image or b.text or (", ".join(f"{n} {h}" for n, h in b.socials) if b.socials else "")
-        return b.mode + (f" ({detail})" if detail else "")
-    s = style.subtitles
-    subs = f"{s.font} {s.size}, activa {s.active_color}" if s.enabled else "no"
-    return (f"estilo '{style.name}'\n  subtitulos: {subs}\n  titulo:     {'si' if style.show_title else 'no'}\n"
-            f"  cabecera:   {block(style.header)}\n  pie:        {block(style.footer)}\n  marco:      {style.frame or 'ninguno'}")
-
-
-def _subtitles(a, base: SubtitleStyle) -> SubtitleStyle | None:
-    """Subtitulos con las opciones dadas sobre `base`; None si no se dio ninguna."""
-    changes = {}
-    if a.subtitles is not None:
-        changes["enabled"] = a.subtitles == "on"
-    if a.sub_color is not None:
-        hex_to_ass(a.sub_color)  # valida el color
-        changes["active_color"] = a.sub_color
-    if a.sub_font is not None:
-        changes["font"] = a.sub_font
-    if a.sub_size is not None:
-        changes["size"] = a.sub_size
-    return replace(base, **changes) if changes else None
-
-
-def _block(spec):
-    return parse_block_spec(spec) if spec is not None else None
+    cap = style.caption_area
+    return (f"estilo '{style.name}'\n  imagen:      {style.overlay}\n  ventana:     {list(style.window)}  (x, y, ancho, alto)\n"
+            f"  subtitulos:  {list(cap) if cap else 'no detectada: se usa la posicion por defecto'}")
 
 
 def cmd_add(a, store):
-    subtitles = _subtitles(a, DEFAULT_SUBS) or DEFAULT_SUBS
-    frame = None if a.frame in (None, "none") else a.frame
-    style = store.add(a.name, subtitles, _block(a.header or "none"), _block(a.footer or "none"), frame,
-                      show_title=a.title != "off", overwrite=a.force)
+    style = store.add(a.name, a.image, a.window, a.captions, overwrite=a.force)
     print(f"Guardado en {STYLES_DIR / a.name}\n{_describe(style)}")
 
 
 def cmd_edit(a, store):
-    current = store.load(a.name)
-    frame = KEEP if a.frame is None else (None if a.frame == "none" else a.frame)
-    style = store.edit(a.name, subtitles=_subtitles(a, current.subtitles), header=_block(a.header), footer=_block(a.footer),
-                       frame_src=frame, show_title=None if a.title is None else a.title == "on")
-    print(f"Actualizado\n{_describe(style)}")
+    print(f"Actualizado\n{_describe(store.edit(a.name, a.image, a.window, a.captions))}")
 
 
 def cmd_list(_a, store):
@@ -91,8 +65,11 @@ def cmd_remove(a, store):
 
 
 def cmd_use(a, store):
-    path = store.apply_to_video(a.name, a.video_id)
-    print(f"Estilo '{a.name}' fijado para {a.video_id}: {path}")
+    name = None if a.name.lower() == "none" else a.name
+    options = RunOptions(subtitles=_on_off(a.subtitles, True), title=_on_off(a.title, True))
+    path = store.apply_to_video(a.video_id, name, options)
+    print(f"Video {a.video_id}: estilo {name or 'ninguno'}, subtitulos {'si' if options.subtitles else 'no'}, "
+          f"titulo {'si' if options.title else 'no'}  ({path})")
 
 
 def cmd_preview(a, store):
@@ -101,33 +78,24 @@ def cmd_preview(a, store):
     out_dir = WORK / a.video_id if a.video_id else STYLES_DIR / a.name
     out_dir.mkdir(parents=True, exist_ok=True)
     cfg = load_cfg(a.video_id or "_preview")
-    path = render_preview(style, cfg, source, out_dir / "style_preview.jpg", out_dir)
-    print(f"Vista previa: {path}")
-
-
-def _style_options():
-    p = argparse.ArgumentParser(add_help=False)
-    p.add_argument("--subtitles", choices=["on", "off"])
-    p.add_argument("--sub-color")
-    p.add_argument("--sub-font")
-    p.add_argument("--sub-size", type=int)
-    p.add_argument("--title", choices=["on", "off"])
-    p.add_argument("--header")
-    p.add_argument("--footer")
-    p.add_argument("--frame")
-    return p
+    print(f"Vista previa: {render_preview(style, cfg, source, out_dir / 'style_preview.jpg', out_dir)}")
 
 
 def build_parser():
     ap = argparse.ArgumentParser(prog="mkyt shorts style")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    opts = _style_options()
-    add = sub.add_parser("add", parents=[opts])
+    add = sub.add_parser("add")
     add.add_argument("name")
+    add.add_argument("image")
+    add.add_argument("--window", type=_rect)
+    add.add_argument("--captions", type=_rect)
     add.add_argument("--force", action="store_true")
     add.set_defaults(run=cmd_add)
-    edit = sub.add_parser("edit", parents=[opts])
+    edit = sub.add_parser("edit")
     edit.add_argument("name")
+    edit.add_argument("--image")
+    edit.add_argument("--window", type=_rect)
+    edit.add_argument("--captions", type=_rect)
     edit.set_defaults(run=cmd_edit)
     sub.add_parser("list").set_defaults(run=cmd_list)
     for name, fn in (("show", cmd_show), ("remove", cmd_remove)):
@@ -137,6 +105,8 @@ def build_parser():
     use = sub.add_parser("use")
     use.add_argument("video_id")
     use.add_argument("name")
+    use.add_argument("--subtitles", choices=["on", "off"])
+    use.add_argument("--title", choices=["on", "off"])
     use.set_defaults(run=cmd_use)
     prev = sub.add_parser("preview")
     prev.add_argument("name")
@@ -149,7 +119,7 @@ def main():
     args = build_parser().parse_args()
     try:
         args.run(args, StyleStore())
-    except (StyleError, ValueError, FileNotFoundError) as e:
+    except (StyleError, FileNotFoundError) as e:
         sys.exit(f"Error: {e}")
 
 
